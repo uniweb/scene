@@ -1,0 +1,35 @@
+{
+  "name": "@uniweb/scene",
+  "version": "0.1.0",
+  "description": "React renderer for the Scene Composition Format — layered visual scenes composited with CSS blend modes",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "keywords": [
+    "uniweb",
+    "scene",
+    "composition",
+    "renderer",
+    "blend-mode",
+    "react",
+    "visual"
+  ],
+  "author": "Uniweb",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uniweb/scene.git"
+  },
+  "bugs": {
+    "url": "https://github.com/uniweb/scene/issues"
+  },
+  "homepage": "https://github.com/uniweb/scene#readme"
+}
