@@ -1,7 +1,6 @@
-// @uniweb/scene — React renderer for the Scene Composition Format.
-//
-// Placeholder: the renderer implementation is brought in from its reference
-// implementation. Until then this keeps the package resolvable. The public
-// surface, once landed, is `Scene` (the renderer component), `composeScene`
-// (pure templating helper), and the scene/layer utilities.
-export {}
+// @uniweb/scene — public surface for the Scene Composition Format renderer.
+export { Scene, default } from './Scene.jsx'
+// `Composition` is a back-compat alias (the renderer's pre-rename name upstream).
+export { Scene as Composition } from './Scene.jsx'
+export * from './layers.js'
+export * from './compose.js'
