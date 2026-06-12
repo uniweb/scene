@@ -1,10 +1,8 @@
 # @uniweb/scene
 
-A React renderer for the **Scene Composition Format** — declarative, layered
-visual scenes composited with CSS blend modes.
-
-> **Status:** initial setup. The renderer implementation is being brought in from
-> its reference implementation; the API below is the shape it lands with.
+A React renderer for the **Scene Composition Format (SCF)** — declarative, layered
+visual scenes composited with CSS blend modes. This package is the reference
+renderer for the format.
 
 ## What is a scene?
 
@@ -28,6 +26,17 @@ server-renderable.
   }
 }
 ```
+
+## Specification
+
+The format is specified in full in [`docs/SPEC.md`](docs/SPEC.md); a JSON Schema
+for validating `.scene.json` files lives in [`docs/scene-composition.schema.json`](docs/scene-composition.schema.json).
+
+As the **reference renderer**, this package implements the complete layer model
+and common layer properties, the built-in animation keyframes, `--vc-*` theming,
+server-side rendering, and container-queried responsive visibility (`hideBelow`,
+`decorative`, mobile-only separators). It does **not** yet implement the format's
+`role`, `intro`, and hero flow-mode behaviors (spec §3.3–§3.4).
 
 ## Install
 
@@ -56,8 +65,8 @@ composition object.
 ### Templating
 
 `composeScene` is a pure, SSR-safe helper that applies named-slot **overrides**
-and an ordered **content** stream to a template scene, then hands the result to
-`<Scene>`:
+and an ordered **content** stream to a template scene (see §11.3–§12 of
+[the spec](docs/SPEC.md)), then hands the result to `<Scene>`:
 
 ```jsx
 import { Scene, composeScene } from '@uniweb/scene'
@@ -123,4 +132,4 @@ of the renderer; without them it is fully inert (`pointer-events: none`).
 
 ## License
 
-Apache-2.0. Derived from a reference renderer for the Scene Composition Format.
+Apache-2.0.

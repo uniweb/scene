@@ -1,0 +1,290 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scene-composition/1.3",
+  "title": "Scene Composition Format (SCF) v1.3",
+  "description": "Portable, declarative specification for layered scene compositions with spray accents, CSS sprays, geometric shapes, subject images, inline SVGs, and text layers.",
+  "type": "object",
+  "required": ["$schema", "name", "composition"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "enum": ["scene-composition/1.3"],
+      "description": "Format version identifier. Must be scene-composition/1.3."
+    },
+    "name": { "type": "string", "minLength": 1 },
+    "description": { "type": "string" },
+    "author": { "type": "string" },
+    "created": { "type": "string" },
+    "modified": { "type": "string" },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "composition": { "$ref": "#/$defs/Composition" }
+  },
+  "additionalProperties": false,
+
+  "$defs": {
+    "CSSFilter": { "type": "string", "default": "none" },
+    "CSSTransform": { "type": "string", "default": "none" },
+    "BlendMode": {
+      "type": "string",
+      "enum": [
+        "normal", "multiply", "screen", "overlay", "darken", "lighten",
+        "color-dodge", "color-burn", "hard-light", "soft-light",
+        "difference", "exclusion", "hue", "saturation", "color", "luminosity"
+      ],
+      "default": "normal"
+    },
+    "Opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+
+    "BlobCompact": {
+      "type": "array",
+      "description": "Compact blob: [cx, cy, rx, ry, color?, opacity?]",
+      "minItems": 4, "maxItems": 6,
+      "prefixItems": [
+        { "type": "number" }, { "type": "number" },
+        { "type": "number" }, { "type": "number" },
+        { "type": "string" }, { "type": "number" }
+      ]
+    },
+    "BlobObject": {
+      "type": "object",
+      "required": ["cx", "cy", "rx", "ry"],
+      "properties": {
+        "cx": { "type": "number" }, "cy": { "type": "number" },
+        "rx": { "type": "number" }, "ry": { "type": "number" },
+        "color": { "type": "string" },
+        "opacity": { "$ref": "#/$defs/Opacity", "default": 1 }
+      },
+      "additionalProperties": false
+    },
+    "Blob": { "oneOf": [{ "$ref": "#/$defs/BlobCompact" }, { "$ref": "#/$defs/BlobObject" }] },
+
+    "Composition": {
+      "type": "object",
+      "properties": {
+        "background": { "type": "string", "default": "transparent", "description": "CSS background — solid color, gradient, or image." },
+        "height": { "type": "string", "default": "100%" },
+        "width": { "type": "string", "default": "100%" },
+        "aspectRatio": { "type": "string" },
+        "scale": { "type": "number", "default": 1, "minimum": 0.01 },
+        "borderRadius": { "type": "string" },
+        "subjects": { "type": "array", "items": { "$ref": "#/$defs/Subject" } },
+        "subject": { "$ref": "#/$defs/Subject", "description": "Deprecated. Single subject for 1.0 backward compatibility." },
+        "texts": { "type": "array", "items": { "$ref": "#/$defs/Text" } },
+        "accents": { "type": "array", "items": { "$ref": "#/$defs/Accent" } },
+        "shapes": { "type": "array", "items": { "$ref": "#/$defs/Shape" } },
+        "sprays": { "type": "array", "items": { "$ref": "#/$defs/Spray" } },
+        "svgs": { "type": "array", "items": { "$ref": "#/$defs/Svg" } },
+        "separators": { "type": "array", "items": { "$ref": "#/$defs/Separator" } },
+        "content": { "$ref": "#/$defs/ContentAnchor" }
+      },
+      "additionalProperties": false
+    },
+
+    "ContentAnchor": {
+      "type": "object",
+      "description": "Declares how an ordered array of render-time content layers is bound into this template. Content items are merged with `defaults[kind]` and auto-assigned zIndex from `zStart` + i*`zStep`. See spec §11.",
+      "properties": {
+        "zStart": { "type": "integer", "default": 100, "description": "zIndex of the first content layer." },
+        "zStep": { "type": "integer", "default": 100, "description": "zIndex increment per content layer. Leaves gaps for template-authored layers to interleave." },
+        "defaults": {
+          "type": "object",
+          "description": "Per-kind default props applied to content items before the item's own fields. Enforces consistent styling across all content payloads.",
+          "properties": {
+            "text":    { "type": "object" },
+            "subject": { "type": "object" },
+            "svg":     { "type": "object" },
+            "shape":   { "type": "object" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "Subject": {
+      "type": "object",
+      "required": ["src"],
+      "properties": {
+        "id": { "type": "string" },
+        "src": { "type": "string" },
+        "alt": { "type": "string", "default": "Subject" },
+        "filter": { "$ref": "#/$defs/CSSFilter" },
+        "backdropFilter": { "type": "string", "default": "none", "description": "CSS backdrop-filter — frosts the content BEHIND the layer (e.g., 'blur(12px) saturate(1.4)'). Renderer emits both unprefixed and -webkit- prefixed variants." },
+        "transform": { "$ref": "#/$defs/CSSTransform" },
+        "opacity": { "$ref": "#/$defs/Opacity", "default": 1 },
+        "mixBlendMode": { "$ref": "#/$defs/BlendMode" },
+        "zIndex": { "type": "integer", "default": 2 },
+        "objectFit": { "type": "string", "enum": ["contain","cover","fill","none","scale-down"], "default": "contain" },
+        "objectPosition": { "type": "string", "default": "center center", "description": "CSS object-position. Shifts the focal point inside the crop — e.g. 'center 30%' pulls the subject down in a cover-mode frame." },
+        "maxWidth": { "type": "string", "default": "70%" },
+        "maxHeight": { "type": "string", "default": "80%" },
+        "animation": { "type": "string", "default": "none" },
+        "hideBelow": { "type": "string", "description": "CSS length (e.g. '640px'). Hide this layer when the composition container's width is below the threshold. See spec §3.4." },
+        "decorative": { "type": "boolean", "description": "Overrides the per-kind decorative heuristic. True = always hidden in hero flow mode; false = always treated as content. See spec §3.4." }
+      },
+      "additionalProperties": false
+    },
+
+    "Text": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "content": { "type": "string", "default": "", "description": "Plain text content. Use \\n for line breaks." },
+        "fontFamily": { "type": "string", "default": "var(--vc-font, inherit)" },
+        "fontSize": { "type": "string", "default": "clamp(1.6rem, 4.5vw, 4rem)" },
+        "fontWeight": { "type": ["number","string"], "default": 400 },
+        "lineHeight": { "type": ["number","string"], "default": 1.05 },
+        "letterSpacing": { "type": "string", "default": "-0.02em" },
+        "textAlign": { "type": "string", "enum": ["left","center","right","justify"], "description": "Defaults to the value of `align` if omitted." },
+        "color": { "type": "string", "default": "#ffffff" },
+        "maxWidth": { "type": "string", "default": "560px" },
+        "textShadow": { "type": "string", "default": "none", "description": "CSS text-shadow (e.g., '0 2px 8px rgba(0,0,0,0.6)'). Unlike drop-shadow via filter, text-shadow does NOT create a new stacking context, so it composes correctly with mixBlendMode. Prefer this over filter: drop-shadow() for shadowing text." },
+        "align": { "type": "string", "enum": ["left","center","right"], "default": "left", "description": "Horizontal positioning sugar. Overridden by explicit `left`/`right`." },
+        "vAlign": { "type": "string", "enum": ["top","center","bottom"], "default": "center", "description": "Vertical positioning sugar. Overridden by explicit `top`/`bottom`." },
+        "top": { "type": "string" },
+        "bottom": { "type": "string" },
+        "left": { "type": "string" },
+        "right": { "type": "string" },
+        "zIndex": { "type": "integer", "default": 10 },
+        "opacity": { "$ref": "#/$defs/Opacity", "default": 1 },
+        "mixBlendMode": { "$ref": "#/$defs/BlendMode" },
+        "filter": { "$ref": "#/$defs/CSSFilter" },
+        "backdropFilter": { "type": "string", "default": "none", "description": "CSS backdrop-filter — frosts the content BEHIND the layer (e.g., 'blur(12px) saturate(1.4)'). Renderer emits both unprefixed and -webkit- prefixed variants." },
+        "transform": { "$ref": "#/$defs/CSSTransform" },
+        "animation": { "type": "string", "default": "none" },
+        "hideBelow": { "type": "string", "description": "CSS length (e.g. '640px'). Hide this layer when the composition container's width is below the threshold. See spec §3.4." },
+        "decorative": { "type": "boolean", "description": "Overrides the per-kind decorative heuristic. True = always hidden in hero flow mode; false = always treated as content. See spec §3.4." }
+      },
+      "additionalProperties": false
+    },
+
+    "Accent": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "variant": { "type": "string", "enum": ["splatter","mist","drip","cloud"], "default": "splatter" },
+        "color": { "type": "string", "default": "#ff3300", "description": "Solid color only — SVG fill does not accept gradients." },
+        "seed": { "type": "integer", "minimum": 0, "default": 1 },
+        "blobs": { "type": "array", "items": { "$ref": "#/$defs/Blob" }, "minItems": 1 },
+        "intensity": { "type": "number", "minimum": 0.002, "maximum": 0.06, "default": 0.015 },
+        "spread": { "type": "number", "minimum": 2, "maximum": 80, "default": 40 },
+        "numOctaves": { "type": "integer", "minimum": 1, "maximum": 5, "default": 2 },
+        "zIndex": { "type": "integer", "default": 0 },
+        "opacity": { "$ref": "#/$defs/Opacity", "default": 0.8 },
+        "mixBlendMode": { "$ref": "#/$defs/BlendMode" },
+        "filter": { "$ref": "#/$defs/CSSFilter" },
+        "backdropFilter": { "type": "string", "default": "none", "description": "CSS backdrop-filter — frosts the content BEHIND the layer (e.g., 'blur(12px) saturate(1.4)'). Renderer emits both unprefixed and -webkit- prefixed variants." },
+        "transform": { "$ref": "#/$defs/CSSTransform" },
+        "animation": { "type": "string", "default": "none" },
+        "hideBelow": { "type": "string", "description": "CSS length (e.g. '640px'). Hide this layer when the composition container's width is below the threshold. See spec §3.4." },
+        "decorative": { "type": "boolean", "description": "Overrides the per-kind decorative heuristic. True = always hidden in hero flow mode; false = always treated as content. See spec §3.4." }
+      },
+      "additionalProperties": false
+    },
+
+    "Shape": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["circle","blob","diamond","pill","rect","half-circle-top","half-circle-bottom","arch","triangle","ring","line"], "default": "circle" },
+        "background": { "type": "string", "default": "#ffffff", "description": "CSS background — solid color, gradient, or any valid value." },
+        "color": { "type": "string" },
+        "width": { "type": "string", "default": "80px" },
+        "height": { "type": "string", "default": "80px" },
+        "top": { "type": "string" },
+        "bottom": { "type": "string" },
+        "left": { "type": "string" },
+        "right": { "type": "string" },
+        "borderRadius": { "type": "string" },
+        "strokeWidth": { "type": "string", "default": "3px" },
+        "zIndex": { "type": "integer", "default": 0 },
+        "opacity": { "$ref": "#/$defs/Opacity", "default": 1 },
+        "mixBlendMode": { "$ref": "#/$defs/BlendMode" },
+        "filter": { "$ref": "#/$defs/CSSFilter" },
+        "backdropFilter": { "type": "string", "default": "none", "description": "CSS backdrop-filter — frosts the content BEHIND the layer (e.g., 'blur(12px) saturate(1.4)'). Renderer emits both unprefixed and -webkit- prefixed variants." },
+        "transform": { "$ref": "#/$defs/CSSTransform" },
+        "animation": { "type": "string", "default": "none" },
+        "hideBelow": { "type": "string", "description": "CSS length (e.g. '640px'). Hide this layer when the composition container's width is below the threshold. See spec §3.4." },
+        "decorative": { "type": "boolean", "description": "Overrides the per-kind decorative heuristic. True = always hidden in hero flow mode; false = always treated as content. See spec §3.4." }
+      },
+      "additionalProperties": false
+    },
+
+    "Spray": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "mode": { "type": "string", "enum": ["airbrush","splatter","gritty","halftone"], "default": "airbrush" },
+        "fill": { "type": "string", "default": "#ff3300", "description": "CSS color or gradient. For mode=splatter, must be a single color (renderer extracts the first hex/rgba match if a gradient is supplied)." },
+        "spread": { "type": "number", "minimum": 0, "maximum": 100, "default": 60 },
+        "radius": { "type": "number", "minimum": 0, "maximum": 100, "default": 50 },
+        "seed": { "type": "integer", "minimum": 0, "default": 1, "description": "PRNG seed for splatter mode (ignored by other modes)." },
+        "width": { "type": "string", "default": "300px" },
+        "height": { "type": "string", "default": "300px" },
+        "top": { "type": "string" },
+        "bottom": { "type": "string" },
+        "left": { "type": "string" },
+        "right": { "type": "string" },
+        "zIndex": { "type": "integer", "default": 0 },
+        "opacity": { "$ref": "#/$defs/Opacity", "default": 1 },
+        "mixBlendMode": { "$ref": "#/$defs/BlendMode" },
+        "filter": { "$ref": "#/$defs/CSSFilter" },
+        "backdropFilter": { "type": "string", "default": "none", "description": "CSS backdrop-filter — frosts the content BEHIND the layer (e.g., 'blur(12px) saturate(1.4)'). Renderer emits both unprefixed and -webkit- prefixed variants." },
+        "transform": { "$ref": "#/$defs/CSSTransform" },
+        "animation": { "type": "string", "default": "none" },
+        "hideBelow": { "type": "string", "description": "CSS length (e.g. '640px'). Hide this layer when the composition container's width is below the threshold. See spec §3.4." },
+        "decorative": { "type": "boolean", "description": "Overrides the per-kind decorative heuristic. True = always hidden in hero flow mode; false = always treated as content. See spec §3.4." }
+      },
+      "additionalProperties": false
+    },
+
+    "Svg": {
+      "type": "object",
+      "required": ["content"],
+      "properties": {
+        "id": { "type": "string" },
+        "content": { "type": "string", "description": "SVG markup. Either a complete <svg>…</svg> element (rendered as-is) or a bare fragment (e.g. <path>, <g>) that the renderer auto-wraps using the layer's viewBox." },
+        "viewBox": { "type": "string", "default": "0 0 100 100", "description": "Coordinate space for fragment content. Ignored when `content` is a complete <svg>." },
+        "color": { "type": "string", "description": "CSS color applied to the wrapper. Inherited by fill=\"currentColor\" / stroke=\"currentColor\" inside the markup. Accepts CSS variables." },
+        "width": { "type": "string", "default": "120px" },
+        "height": { "type": "string", "default": "120px" },
+        "top": { "type": "string" },
+        "bottom": { "type": "string" },
+        "left": { "type": "string" },
+        "right": { "type": "string" },
+        "zIndex": { "type": "integer", "default": 0 },
+        "opacity": { "$ref": "#/$defs/Opacity", "default": 0.7 },
+        "mixBlendMode": { "$ref": "#/$defs/BlendMode" },
+        "filter": { "$ref": "#/$defs/CSSFilter" },
+        "backdropFilter": { "type": "string", "default": "none", "description": "CSS backdrop-filter — frosts the content BEHIND the layer (e.g., 'blur(12px) saturate(1.4)'). Renderer emits both unprefixed and -webkit- prefixed variants." },
+        "transform": { "$ref": "#/$defs/CSSTransform" },
+        "animation": { "type": "string", "default": "none" },
+        "hideBelow": { "type": "string", "description": "CSS length (e.g. '640px'). Hide this layer when the composition container's width is below the threshold. See spec §3.4." },
+        "decorative": { "type": "boolean", "description": "Overrides the per-kind decorative heuristic. True = always hidden in hero flow mode; false = always treated as content. See spec §3.4." }
+      },
+      "additionalProperties": false
+    },
+
+    "Separator": {
+      "type": "object",
+      "description": "Flow-mode-only layer. Renders nothing in desktop mode; becomes a visible horizontal rule in hero flow mode (spec §3.4.3). Participates in the z-index stack like any other layer. See spec §10.",
+      "properties": {
+        "id": { "type": "string" },
+        "gap": { "type": "string", "enum": ["normal", "large"], "default": "large", "description": "Vertical space contributed in flow mode. Normal ≈ 0.5rem extra margin; large ≈ 1.5rem extra margin." },
+        "label": { "type": "string", "description": "Optional centered label rendered between the rule segments." },
+        "color": { "type": "string", "default": "currentColor", "description": "Rule and label color. Inherits container color by default." },
+        "thickness": { "type": "string", "default": "1px", "description": "CSS length for the rule. Set to '0' for invisible gap only." },
+        "zIndex": { "type": "integer", "default": 0 },
+        "opacity": { "$ref": "#/$defs/Opacity", "default": 1 },
+        "mixBlendMode": { "$ref": "#/$defs/BlendMode" },
+        "filter": { "$ref": "#/$defs/CSSFilter" },
+        "backdropFilter": { "type": "string", "default": "none", "description": "CSS backdrop-filter — frosts the content BEHIND the layer (e.g., 'blur(12px) saturate(1.4)'). Renderer emits both unprefixed and -webkit- prefixed variants." },
+        "transform": { "$ref": "#/$defs/CSSTransform" },
+        "animation": { "type": "string", "default": "none" },
+        "hideBelow": { "type": "string", "description": "CSS length (e.g. '640px'). Hide this layer when the composition container's width is below the threshold. See spec §3.4." },
+        "decorative": { "type": "boolean", "description": "Overrides the per-kind decorative heuristic. True = always hidden in hero flow mode; false = always treated as content. Separators default to content. See spec §3.4." }
+      },
+      "additionalProperties": false
+    }
+  }
+}
